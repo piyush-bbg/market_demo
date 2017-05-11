@@ -1,0 +1,23 @@
+Following design are kept into considerations
+
+1. reciever.cpp : This class is responsible to multicast connection handling to get data feeds. it contains async_data_reader  and message_processor.
+
+2. async_data_reader.cpp: This is a wrapper class written on boost::asio::io_service with its own dedicated thread to handle the work.
+
+3. message_processer.cpp: This class handle incoming data messages from multicast and notify producer which further share them with relvant subscribers
+
+4. publisher.cpp: This class contains the subscription information of each client and based on the subscription shares with all the subscribers.
+
+5. tcp_sender.cpp: contains session and sever which listens and notifies to downstream client
+
+
+NOTE
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+1. Many simplifcation has been made based on available time , design has been squeezed to acheieve the desire functional behaviour.
+
+Some point which were elimnated
+ a. Data structure to store trade_staticts and market depth information
+ b. I have avoided thread switching and synchronization by using same thread for complete critical path
+ c. More generalization should be done for configuration parametrs to be controlled by user in runtime
+
+
