@@ -1,22 +1,27 @@
+BUILD STEPS
 #############################################################
-
-1. Build steps: Following command need to be executed 
-
+1. Following steps are required for compilation
    a. cd market 
    b. mkdir build && cd build
-   c  cmake ../
+   c. cmake ../
+   d. make all -j
 2. 3 binaries will be created inside 3 folders mentioned below
 
    market_data_provider/
    mcast_sender/
    tcp_client/
 
-3. market_data_provider binary is  main binary. it listens to multicast data feed using mcast_sender binary. tcp_client binary are the downward app which listens
-   to market_data_provider. 
+3. market_data_provider binary is  main binary. it listens to multicast data feed using mcast_sender binary. tcp_client binary is the downward app which listens
+   to market_data_provider. mcast_sender is binary to feed the multicast data.
 
 
 HOW TO RUN THE BINARY
 ##############################################################
-1. Run market_data_provider : ./market_data_provider 0.0.0.0 239.255.0.1 - it joins multicast port and listens for incoming clients connect at port 40001 (presently hard coded)
-2. Subscribe the interested client: ./tcp_client 127.0.0.1 40001 - it currently subscribe for trade statistics(4). It has capablity to subscribe combination of 3 messages MarketStatus(1), Quote(2), Trade statistics(4) - combination could be provided by sending 5 which means subscribe to Trade Statistics and Market status
-3.Feed the data using: ./mcast_sender 239.255.0.1 . it requires a binary file which has relevant messages. The file messages.dat is kept in doc folder. This should be copied in the folder from where we run mcast_sender binary.
+1. Run market_data_provider : ./market_data_provider 0.0.0.0 239.255.0.1 
+- it joins multicast port and listens for incoming clients connect at port 40001 (presently hard coded)
+
+2. Subscribe the tcp_ client with required subscription type: ./tcp_client 127.0.0.1 40001 7
+- It has capablity to subscribe combination of 3 messages MarketStatus(1), Quote(2), Trade statistics(4) - combination could be provided by sending 5 which means subscribe to Trade Statistics and Market status
+
+3.Feed the data using: ./mcast_sender 239.255.0.1 1
+- it requires a binary file which has relevant messages. The file messages.dat is kept in doc folder. This should be copied in the folder from where we run mcast_sender binary. messages.dat.9999 contains 9999 Quote message, 9999 Trade message and 2 Market status message.
