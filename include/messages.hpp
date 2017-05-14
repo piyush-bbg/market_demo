@@ -7,21 +7,6 @@ namespace pgu
 #pragma pack(push)  /* push current alignment to stack */
 #pragma pack(1) 
 
-enum phase
-  {
-    Open,
-    Close,
-    Auction,
-    Halt,
-  };
-
-enum side
-  {
-    Buy,
-    Sell
-  };
-
-
 struct MarketStatus
 {
   char type; // P
@@ -73,7 +58,6 @@ struct Logon
   int id;
   short subscription; // 1= phase  2 = price  4= trade
  
-  
   friend std::ostream& operator<<(std::ostream& os, const Logon& t)
   {
     os << t.type << ", " << t.id << ", " << t.subscription <<std::endl;
@@ -82,34 +66,7 @@ struct Logon
 
 };
 
-
-struct Logout
-{
-  char type; // X 
-  int id;  
-  friend std::ostream& operator<<(std::ostream& os, const Logout& t)
-  {
-    os << t.type << t.id ;
-    return os;
-  }
-
-};
-
-
-struct Heartbeat
-{
-  char type; // H 
-  friend std::ostream& operator<<(std::ostream& os, const Heartbeat& t)
-  {
-    os << t.type ;
-    return os;
-  }
-
-};
-
-
 #pragma pack(pop) 
-} //pgu
-
+} // namespace pgu ends
 
 #endif

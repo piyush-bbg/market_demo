@@ -5,9 +5,7 @@
 class message_processor
 {
 public:
-  message_processor(publisher& p):_p(p)
-  {  }
-
+  message_processor(publisher& p);
   void process_message(const char* msg, size_t len );
 
 private:

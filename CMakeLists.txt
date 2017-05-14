@@ -1,6 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
 project (MARKET_DATA)
-find_package(Boost COMPONENTS system filesystem thread REQUIRED)
+
+find_package(Boost COMPONENTS date_time system filesystem thread REQUIRED)
+add_definitions(-DBOOST_DATE_TIME_POSIX_TIME_STD_CONFIG)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 include_directories ("${PROJECT_SOURCE_DIR}/include")

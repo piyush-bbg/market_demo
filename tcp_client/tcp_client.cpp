@@ -1,5 +1,4 @@
 #include <boost/asio.hpp>
-#include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/read_until.hpp>
@@ -7,12 +6,12 @@
 #include <boost/asio/write.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
+
 #include <iostream>
 
-#include "../include/messages.hpp"
+#include "messages.hpp"
 
 
-using boost::asio::deadline_timer;
 using boost::asio::ip::tcp;
 
 class client
@@ -21,8 +20,7 @@ public:
   client(boost::asio::io_service& io_service, char* sub_type)
     : stopped_(false),
       socket_(io_service)
-      //      deadline_(io_service),
-      //      heartbeat_timer_(io_service)
+     , _remaining_data(0)
   {
     try
       {
@@ -36,35 +34,27 @@ public:
       }
     catch(const boost::bad_lexical_cast &)
       {
-	std::cout << "Not able to convert subscription to integer. Assigning value 7 (Marke_status + Quote + Trade)" << std::endl;
+	std::cout << "Not able to convert subscription to integer. Assigning value 7 (Market_status + Quote + Trade)" << std::endl;
 	sub_type_ = 7;
       }
   }
 
   void start(tcp::resolver::iterator endpoint_iter)
   {
-
     start_connect(endpoint_iter);
-    // deadline_.async_wait(boost::bind(&client::check_deadline, this));
   }
 
   void stop()
   {
     stopped_ = true;
     socket_.close();
-    // deadline_.cancel();
-    //    heartbeat_timer_.cancel();
   }
-
 private:
   void start_connect(tcp::resolver::iterator endpoint_iter)
   {
     if (endpoint_iter != tcp::resolver::iterator())
       {
 	std::cout << "Trying " << endpoint_iter->endpoint() << "...\n";
-
-	// Set a deadline for the connect operation.
-	//deadline_.expires_from_now(boost::posix_time::seconds(60));
 
 	// Start the asynchronous connect operation.
 	socket_.async_connect(endpoint_iter->endpoint(),
@@ -87,18 +77,13 @@ private:
     if (!socket_.is_open())
       {
 	std::cout << "Connect timed out\n";
-
-	// Try the next available endpoint.
 	start_connect(++endpoint_iter);
       }
 
-    // Check if the connect operation failed before the deadline expired.
     else if (ec)
       {
 	std::cout << "Connect error: " << ec.message() << "\n";
 
-	// We need to close the socket used in the previous connection attempt
-	// before starting a new one.
 	socket_.close();
 
 	// Try the next available endpoint.
@@ -109,9 +94,9 @@ private:
     else
       {
 	std::cout << "Connected to " << endpoint_iter->endpoint() << "\n";
+	std::cout << "Message_type information: P - Market status, M - Quote, T - Trade\n";
 
 	start_write();
-
 	start_read();
 
       }
@@ -119,23 +104,25 @@ private:
 
   void start_read()
   {
-
-    // Set a deadline for the read operation.
-    //  deadline_.expires_from_now(boost::posix_time::seconds(30));
-
-    // Start an asynchronous operation to read a newline-delimited message.
-    boost::asio::async_read(socket_, boost::asio::buffer(data), boost::asio::transfer_at_least(1),
-			    boost::bind(&client::handle_read, this, _1));
+    boost::asio::async_read(socket_,
+			    boost::asio::buffer(data_+ _remaining_data, max_length - _remaining_data),
+			    boost::asio::transfer_at_least(1),
+			    boost::bind(&client::handle_read, this, _1, _2));
   }
 
-  void handle_read(const boost::system::error_code& ec)
+  void handle_read(const boost::system::error_code& ec, size_t byte_length)
   {
+    tot_length += byte_length;
     if (stopped_)
       return;
 
     if (!ec)
       {
-	print_msg(data);
+	size_t read_len = byte_length + _remaining_data;
+	_remaining_data = print_msg(data_, read_len);
+	if (_remaining_data)
+	  memmove(data_, data_+ read_len - _remaining_data, _remaining_data);
+
 	start_read();
       }
     else
@@ -146,36 +133,65 @@ private:
       }
   }
 
-  void print_msg(char* msg)
+int print_msg(char* msg, size_t byte_length)
   {
-    char msg_type = *msg;    
-    std:: cout << "Message_type:**********";
+    bool f_exit = false;
+    int consumed_byte = 0;
+    int byte_left = byte_length;
+    while( byte_left )
+      {
+	char msg_type = *( msg + consumed_byte);
 	switch(msg_type)
 	  {
-	  case 'P': 
+	  case 'P':
 	    {
-	    const pgu::MarketStatus* ms = 
-	      reinterpret_cast<const pgu::MarketStatus*>(msg);
-	    std::cout << *ms << std::endl;
-	    break;
+	      if (byte_left < sizeof(pgu::MarketStatus))
+		f_exit =true;
+	      else
+		{
+	      const pgu::MarketStatus* ms =
+		reinterpret_cast<const pgu::MarketStatus*>(msg + consumed_byte);
+	      consumed_byte += sizeof(pgu::MarketStatus);
+	      byte_left -= sizeof(pgu::MarketStatus);
+	      std::cout << *ms << std::endl;
+		}
+	      break;
 	    }
 	  case 'M':
 	    {
-	      const pgu::Quote* q =
-	       reinterpret_cast<const pgu::Quote*>(msg);
-	    std::cout << *q << std::endl;
-	    break;
+	      if (byte_left < sizeof(pgu::Quote))
+		f_exit = true;
+	      else
+		{
+	      const pgu::Quote* q = reinterpret_cast<const pgu::Quote*>(msg + consumed_byte);
+	      consumed_byte += sizeof(pgu::Quote);
+	      byte_left -= sizeof(pgu::Quote);
+	      std::cout << *q << std::endl;
+		}
+	      break;
 	    }
 	  case 'T':
 	    {
-	    const pgu::Trade* t =
-	      reinterpret_cast<const pgu::Trade*>(msg);
-	    std::cout << *t << std::endl;
-	    break;
+	      if (byte_left < sizeof(pgu::Trade))
+		f_exit =true;
+	      else
+		{
+	      const pgu::Trade* t = reinterpret_cast<const pgu::Trade*>(msg + consumed_byte);
+	      consumed_byte += sizeof(pgu::Trade);
+	      byte_left -= sizeof(pgu::Trade);
+	      std::cout << *t << std::endl;
+		}
+	      break;
 	    }
 	  default:
-	    std::cout << "Unknown message type" << std::endl; 
+	    std::cout << "Unknown message type: "<< msg_type << " ignoring packet!!"<< std::endl;
+	    return 0;
 	  }
+	if (f_exit)
+	  break;
+      }
+    //   std:: cout << "byte_length: " << byte_length << " consumed_byte: " << consumed_byte << " byte_left: "<< byte_left<<std::endl;
+    return byte_left;
   }
 
 
@@ -188,7 +204,7 @@ private:
     msg.type = 'L';
     msg.id = 10001;
     msg.subscription = sub_type_;
-    
+
     // start an asynchronous operation to send a heartbeat message.
     boost::asio::async_write(socket_, boost::asio::buffer(&msg, sizeof(msg)),
 			     boost::bind(&client::handle_write, this, _1));
@@ -201,42 +217,20 @@ private:
 
     if (ec)
       {
-	std::cout << "Error on heartbeat: " << ec.message() << "\n";
-
+	//std::cout << "Error on heartbeat: " << ec.message() << "\n";
 	stop();
       }
   }
 
-  // void check_deadline()
-  // {
-  //   if (stopped_)
-  //     return;
-
-  //   // Check whether the deadline has passed. We compare the deadline against
-  //   // the current time since a new asynchronous operation may have moved the
-  //   // deadline before this actor had a chance to run.
-  //   if (deadline_.expires_at() <= deadline_timer::traits_type::now())
-  //     {
-  // 	// The deadline has passed. The socket is closed so that any outstanding
-  // 	// asynchronous operations are cancelled.
-  // 	socket_.close();
-
-  // 	// There is no longer an active deadline. The expiry is set to positive
-  // 	// infinity so that the actor takes no action until a new deadline is set.
-  // 	deadline_.expires_at(boost::posix_time::pos_infin);
-  //     }
-
-  //   // Put the actor back to sleep.
-  //   deadline_.async_wait(boost::bind(&client::check_deadline, this));
-  // }
 
 private:
   bool stopped_;
   tcp::socket socket_;
-  //  deadline_timer deadline_;
-  //  deadline_timer heartbeat_timer_;
-  char data[1024];
+  enum { max_length = 1024 };
+  char data_[max_length];
   short sub_type_;
+  size_t _remaining_data;
+  size_t tot_length;
 };
 
 int main(int argc, char* argv[])
@@ -245,12 +239,12 @@ int main(int argc, char* argv[])
     {
       if (argc != 4)
 	{
-	  std::cerr << "Usage: client <host> <port> <subscription_type>\n";
+	  std::cerr << "Usage: tcp_client <host> <port> <subscription_type>\n";
 	  std::cerr << "<subscription_type> 1 Market status, 2 Quote, 4 Trade\n";
-	  std::cerr << "<subscription_type> combination 3 Market status +  Quote\n";
-	  std::cerr << "<subscription_type> combination 5 Market status +  Trade\n";
-	  std::cerr << "<subscription_type> combination 6 Quote +  Trade\n";
-	  std::cerr << "<subscription_type> combination 7 All  Quote +  Trade + Market Status\n";
+	  std::cerr << "<subscription_type> combination 3 (Market status +  Quote)\n";
+	  std::cerr << "<subscription_type> combination 5 (Market status +  Trade)\n";
+	  std::cerr << "<subscription_type> combination 6 (Quote +  Trade)\n";
+	  std::cerr << "<subscription_type> combination 7 All (Quote +  Trade + Market Status)\n";
 
 	  return 1;
 	}

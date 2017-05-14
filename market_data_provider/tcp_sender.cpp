@@ -63,7 +63,7 @@ session::session(boost::asio::io_service& io_service,
       }
 
   }
-    
+
 
   void session::handle_read(const boost::system::error_code& error,
 		   size_t bytes_transferred)
@@ -71,7 +71,7 @@ session::session(boost::asio::io_service& io_service,
     if (!error)
       {
 	char msg_type = *data_;
-	std::cout << "session::handle_read:msg_type " << msg_type << std::endl;
+	std::cout << "On session::handle_read:msg_type method " << msg_type << " recieved from client." <<std::endl;
 
 	switch(msg_type)
 	  {
@@ -79,18 +79,6 @@ session::session(boost::asio::io_service& io_service,
 	    {
 	      pgu::Logon* msg = reinterpret_cast<pgu::Logon*>(data_);
 	      on_logon_msg(msg);
-	    }
-	    break;
-	  case 'X':
-	    {
-	      pgu::Logout* msg = reinterpret_cast<pgu::Logout*>(data_);
-	      on_logout_msg(msg);
-	    }
-	    break;
-	  case 'H':
-	    {
-	      pgu::Heartbeat* msg = reinterpret_cast<pgu::Heartbeat*>(data_);
-	      on_heartbeat_msg(msg);
 	    }
 	    break;
 	  default:
@@ -114,17 +102,16 @@ session::session(boost::asio::io_service& io_service,
 
   void session::update(const char* msg, size_t len)
   {
-    	boost::asio::async_write(socket_,
-				 boost::asio::buffer(msg, len),
-				 boost::bind(&session::handle_write, this,
-					     boost::asio::placeholders::error));
+    boost::asio::async_write(socket_,
+			     boost::asio::buffer(msg, len),
+			     boost::bind(&session::handle_write, this,
+					 boost::asio::placeholders::error));
 
   }
 
   void session::on_logon_msg(pgu::Logon* msg)
   {
-    
-    std::cout << "session::on_logon_msg sub_type:" << msg->subscription << std::endl;
+    std::cout << "On session::on_logon_msg method, subscription_type:" << msg->subscription << " recieved." << std::endl;
     switch(msg->subscription)
       {
       case 1:
@@ -154,28 +141,12 @@ session::session(boost::asio::io_service& io_service,
   	handler_->subscribe(this, 'T');
   	break;
       default:
-  	std::cout << "No subscription done: Unknown subscription type" << std::endl;
-
+	std::cout << "No subscription done: Unknown subscription type!!" << std::endl;
       }
 
   }
 
-void session::on_logout_msg(pgu::Logout* msg)
-{
-  // send logout message and close the connection
-  
-  delete this;
-}
-
-
-void session::on_heartbeat_msg(pgu::Heartbeat* msg)
-{
-  // reset the timer
-}
-
-
-// server class       
-
+// server class
 server::server(boost::asio::io_service& io_service, short port, handler* h)
     : io_service_(io_service),
       acceptor_(io_service, tcp::endpoint(tcp::v4(), port)),
@@ -206,4 +177,3 @@ void server::handle_accept(session* new_session,
 
   start_accept();
 }
-

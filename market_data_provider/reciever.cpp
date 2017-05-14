@@ -35,24 +35,20 @@ public:
 
     adr.start();
     std::cout << "Reciever started" << std::endl;
-    pub_.run();
+    pub_.start();
+    pub_.observer();
   }
-  
+
 void handle_receive_from(const boost::system::error_code& error,
 			 size_t bytes_recvd)
 {
   if (!error)
     {
-      std::cout << "reciever::handle_receive_from" << std::endl;
-
-      boost::thread::id this_id = boost::this_thread::get_id();
-      std::cout << "thread " << this_id << " \n";
-
       processor_.process_message(data_, bytes_recvd);
-		
+
       // std::cout.write(data_, bytes_recvd);
       // std::cout << std::endl;
-      
+
       socket_.async_receive_from(
 				 boost::asio::buffer(data_, max_length), sender_endpoint_,
 				 boost::bind(&receiver::handle_receive_from, this,
@@ -63,7 +59,6 @@ void handle_receive_from(const boost::system::error_code& error,
 
   ~receiver()
   {
-    std::cout << "reciever's destructor called" << std::endl;
   }
 
 private:
@@ -81,17 +76,14 @@ int main(int argc, char* argv[])
     {
       if (argc != 3)
 	{
-	  std::cerr << "Usage: receiver <listen_address> <multicast_address>\n";
+	  std::cerr << "Usage: market_data_provider <listen_address> <multicast_address>\n";
 	  std::cerr << "  For IPv4, try:\n";
-	  std::cerr << "    receiver 0.0.0.0 239.255.0.1\n";
+	  std::cerr << "    market_data_provider 0.0.0.0 239.255.0.1\n";
 	  std::cerr << "  For IPv6, try:\n";
-	  std::cerr << "    receiver 0::0 ff31::8000:1234\n";
+	  std::cerr << "    market_data_provider 0::0 ff31::8000:1234\n";
 	  return 1;
 	}
 
-      boost::thread::id this_id = boost::this_thread::get_id();
-      std::cout << "thread1 " << this_id << " \n";
-      
       async_data_reader adr;
       receiver r( adr,
 		  boost::asio::ip::address::from_string(argv[1]),

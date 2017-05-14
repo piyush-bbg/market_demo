@@ -3,9 +3,9 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
-#include "../include/messages.hpp"
-#include "../include/subscriber.hpp"
-#include "../include/handler.hpp"
+#include "messages.hpp"
+#include "subscriber.hpp"
+#include "handler.hpp"
 
 using boost::asio::ip::tcp;
 const short tcp_port = 40001;
@@ -30,19 +30,13 @@ private:
   void update (const char* msg, size_t len);
 
   void on_logon_msg(pgu::Logon* msg);
-
-
-  void on_logout_msg(pgu::Logout* msg);
-
-
-  void on_heartbeat_msg(pgu::Heartbeat* msg);
-
        
   tcp::socket socket_;
   enum { max_length = 1024 };
   char data_[max_length];
   handler*  handler_;
   short sub_type_;
+  size_t tot_length;
 };
 
 class server 
