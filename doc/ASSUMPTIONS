@@ -3,8 +3,7 @@ ASSUMPTIONS
 1. Market data is coming as Multicast. No packet loss is assumed during multicast transmission and no recovery mechanism is put in the place. 
 2. Market data is on the rank basis for market depth of only ONE instrument.
 3. Separate message for Quote and Trade is provided on trade updates.
-4. Some values should be configurable , but due to time constraints this is not fully configurable.
-5. The Structure taken for test purpose is very simple, it doesn't contain timestamps etc.
+4. The Structure taken for test purpose is very simple, it doesn't contain timestamps etc.
 
 
 

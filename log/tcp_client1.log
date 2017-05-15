@@ -1,0 +1,13 @@
+Subscription type: 1
+Trying 127.0.0.1:40001...
+Connected to 127.0.0.1:40001
+Message_type information: P - Market status, M - Quote, T - Trade
+P, REL, 3
+
+P, REL, 1
+
+P, REL, 3
+
+P, REL, 1
+
+Error on receive: End of file

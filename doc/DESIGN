@@ -1,4 +1,4 @@
-Following design are kept into considerations
+Following is the current design:
 
 1. reciever.cpp : This class is responsible to multicast connection handling to get data feeds. it contains async_data_reader  and message_processor.
 
@@ -10,14 +10,22 @@ Following design are kept into considerations
 
 5. tcp_sender.cpp: contains session and sever which listens and notifies to downstream client
 
+6. async_data_writer.cpp: This is a wrapper class written on boost::asio::io_service with its own dedicated thread to handle the work.
+
+
+Threads behaviour:
+thread 1 is listening for multicast data feeds and publishes the data on boost::lockfree::queue and calls the notification function.
+thread 2  is listening for clients connection and subscribes the new connection.
+Main thread after creation of two threads(thread 1 and thread 2) calls publisher::observer function and waits for notfication from thread 1 that data has been pushed in boost::lockfree::queue. After notification it loops through all the subscription present and sends data to availiable connection 
+
 
 NOTE
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-1. Many simplifcation has been made based on available time , design has been squeezed to acheieve the desire functional behaviour.
+1. Many simplifcation has been made based on available time, design has been squeezed to acheieve the desire functional behaviour.
 
 Some point which were elimnated
- a. Data structure to store trade_staticts and market depth information
- b. I have avoided thread switching and synchronization by using same thread for complete critical path
- c. More generalization should be done for configuration parametrs to be controlled by user in runtime
+ a. Data structure to store trade_statistics and market depth instrument wise has not been created on assumption it is serving for 1 instrument.
+ b. Subscription mechanism of clients are put into place, However unsubscription is not implementes as of now.
+ c. No recovery mechanism is put into place. Data is assumed to be coming from single channel and No arbitration is put into place.
 
 
