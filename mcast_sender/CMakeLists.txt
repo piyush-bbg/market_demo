@@ -1,9 +1,9 @@
-add_executable(mcast_sender sender.cpp)
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+  add_executable(mcast_sender sender.cpp)
 
-target_link_libraries(mcast_sender
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  ${Boost_THREAD_LIBRARY}
-  pthread
-)
-
+  target_link_libraries(mcast_sender
+    ${Boost_LIBRARIES}
+    pthread
+    )
+endif()

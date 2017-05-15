@@ -1,8 +1,10 @@
-add_executable(tcp_client tcp_client.cpp)
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+  add_executable(tcp_client tcp_client.cpp)
 
-target_link_libraries(tcp_client
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  ${Boost_THREAD_LIBRARY}
-  pthread
-)
+  target_link_libraries(tcp_client
+    ${Boost_LIBRARIES}
+    pthread
+    )
+endif()
+

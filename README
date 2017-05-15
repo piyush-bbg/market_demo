@@ -5,6 +5,18 @@ BUILD STEPS
    b. mkdir build && cd build
    c. cmake ../
    d. make all -j
+
+NOTE: Project is dependent on boost libraries. I have built the project using boost 1.55.0. Please provide the boost path for compilation. In my machine I have configured following enviornment variables, where boost include files and libraries can be found.
+
+PATH=$PATH:/usr/local/boost_1_55_0/stage/lib
+BOOST_ROOT=/usr/local/boost_1_55_0
+
+If you get boost requirment issue , please provide following variables in cmake.
+Boost_INCLUDE_DIR         - Directory containing Boost headers
+Boost_LIBRARY_DIR         - Directory containing Boost librarie
+
+Please refer: https://cmake.org/cmake/help/v3.0/module/FindBoost.html
+
 2. 3 binaries will be created inside the build, inside respective folders as mentioned below
 
    market_data_provider/
